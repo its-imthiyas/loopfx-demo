@@ -1,6 +1,7 @@
 from flask import Flask, render_template, jsonify
 import requests
 import plotly.express as px
+from datetime import datetime
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -35,8 +36,22 @@ def home():
     else:
         graph_json = None
     
+    
+      # Create the candlestick chart
+    fig2 = go.Figure(data=[go.Candlestick(x=df['time'],
+                                         open=df['open'],
+                                         high=df['high'],
+                                         low=df['low'],
+                                         close=df['close'])])
+    fig2.update_layout(title=f'Candlestick Chart for EURUSD',
+                      xaxis_title='Time',
+                      yaxis_title='Price')
+    
+    # Convert the chart to JSON
+    graph_json2 = fig2.to_json()
+    
     # Render the data in the template
-    return render_template('home.html', graph_json=graph_json)
+    return render_template('home.html', graph_json=graph_json, graph_json2=graph_json2, data=data)
 
 
 @app.route('/currency/<pair>')
