@@ -23,51 +23,57 @@ def index():
     # Render the data in the template
     return render_template('index.html', data=data)
 
-
-@app.route('/home')
-def home():
-    # Fetch data from the backend API
-    # data = fetch_data_from_api(f"{BACKEND_API_URL}/currency_prices/200")
-    response = requests.get(f"{BACKEND_API_URL}/currency_prices_by_pair/EURUSD")
-    data = response.json()
+@app.route('/home', defaults={'pair': 'EURUSD', 'period': 7})
+@app.route('/home/<pair>/<int:period>')
+def home(pair, period):
+    try:
+            # Fetch data from the backend API
+        response = requests.get(f"{BACKEND_API_URL}/currency_prices_by_pair_and_period/{pair}/{period}")
+        data = response.json()
     
-    if data:
-        df = pd.DataFrame(data)
-        df['time'] = pd.to_datetime(df['time'])
-        df['time'] = df['time'].dt.tz_localize(None)
+        if data:
+            df = pd.DataFrame(data)
+            df['time'] = pd.to_datetime(df['time'])
+            df['time'] = df['time'].dt.tz_localize(None)
         
-        # Calculate moving averages over a 20-period window
-        df['SMA20'] = df['close'].rolling(window=20).mean()
-        df['EMA20'] = df['close'].ewm(span=20, adjust=False).mean()
-    else:
-        graph_json = None
+            # Calculate moving averages over a 20-period window
+            df['SMA20'] = df['close'].rolling(window=20).mean()
+            df['EMA20'] = df['close'].ewm(span=20, adjust=False).mean()
     
-    
-      # Create the candlestick chart
-    fig = go.Figure(data=[go.Candlestick(x=df['time'],
+            # Create the candlestick chart
+            fig = go.Figure(data=[go.Candlestick(x=df['time'],
                                          open=df['open'],
                                          high=df['high'],
                                          low=df['low'],
                                          close=df['close'])])
     
-    # Overlay the 20-period SMA and EMA
-    fig.add_trace(go.Scatter(x=df['time'], y=df['SMA20'], mode='lines', name='SMA20'))
-    fig.add_trace(go.Scatter(x=df['time'], y=df['EMA20'], mode='lines', name='EMA20'))
+            # Overlay the 20-period SMA and EMA
+            fig.add_trace(go.Scatter(x=df['time'], y=df['SMA20'], mode='lines', name='SMA20'))
+            fig.add_trace(go.Scatter(x=df['time'], y=df['EMA20'], mode='lines', name='EMA20'))
     
-    fig.update_layout(title=f'Candlestick Chart for EURUSD',
+            fig.update_layout(title=f'Candlestick Chart for {pair} - {period} days',
                       xaxis_title='Time',
                       yaxis_title='Price',
                       xaxis=dict(
-            type='date',
-            tickformat='%b %d %H:%M'
-        ))
+                    type='date',
+                    tickformat='%b %d %H:%M'
+                ))
 
     
-    # Convert the chart to JSON
-    graph_json = fig.to_json()
+            # Convert the chart to JSON
+            graph_json = fig.to_json()
+            message = None
+        
+        else:
+            graph_json = None
+            message = "No data availabe to show - Market closed?"
+    except Exception as e:
+        graph_json = None
+        message = "An error occurred while fetching data. Please try again later."
+    
     
     # Render the data in the template
-    return render_template('home.html', graph_json=graph_json, data=data, currency = 'EURUSD')
+    return render_template('home.html', graph_json=graph_json, data=data, currency=pair, period=period, message=message)
 
 
 
@@ -96,7 +102,6 @@ def fetch_live_rates():
 def live_rates():
     rates = fetch_live_rates()
     return jsonify(rates)
-
 
 
 @app.route('/currency/<pair>')

@@ -355,7 +355,7 @@
                     <li><a class="dropdown-item" value="USDZAR">USDZAR</a></li>
                   </ul>
               </div>
-              <div class="btn-group me-2">
+              <div id= "period" class="btn-group me-2">
                 <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     Choose the period
                   </button>
@@ -411,7 +411,7 @@
                 tickformat: "%b %d %H:%M" // Format: Feb 7 00:00
             };
             Plotly.react('technical-chart', graph_data.data, graph_data.layout);
-            
+
             // Download chart as image
     document.querySelector('.btn-outline-secondary').addEventListener('click', function() {
         Plotly.toImage(document.getElementById('technical-chart'), {format: 'png', height: 600, width: 800})
@@ -425,7 +425,7 @@
             });
     });
         } else {
-            document.getElementById('plotly-chart').innerText = 'No data available to display the chart.';
+            document.getElementById('technical-chart').innerText = 'No data available to display the chart.';
         }
     </script>
     <script>
@@ -465,6 +465,29 @@
                     $(this).addClass('active');
                     $('.btn-secondary.dropdown-toggle').first().text($(this).text());
                 }
+            });
+
+            // Set the value of the period dropdown
+            var selectedPeriod = "{{ period }}";
+            $('#period .dropdown-item').each(function() {
+                if ($(this).attr('value') === selectedPeriod) {
+                    $(this).addClass('active');
+                    $(this).closest('.btn-group').find('.btn-secondary.dropdown-toggle').text($(this).text());
+                }
+            });
+
+            // Handle currency dropdown change
+            $('#currency .dropdown-item').on('click', function() {
+                var newCurrency = $(this).attr('value');
+                var period = "{{ period }}"; // Use the current period
+                window.location.href = `/home/${newCurrency}/${period}`;
+            });
+
+            // Handle period dropdown change
+            $('#period .dropdown-item').on('click', function() {
+                var newPeriod = $(this).attr('value');
+                var currency = "{{ currency }}"; // Use the current currency
+                window.location.href = `/home/${currency}/${newPeriod}`;
             });
         });
     </script>
