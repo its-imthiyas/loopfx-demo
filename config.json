@@ -1,0 +1,5 @@
+{
+    "DATA_FOLDER": "data",
+    "DB_PATH": "data/currency_data.db",
+    "CURRENCY_PAIRS": ["EURUSD=X", "GBPUSD=X", "EURGBP=X", "USDCAD=X", "USDZAR=X"]
+}
