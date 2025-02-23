@@ -233,9 +233,19 @@
               <h5 class="offcanvas-title" id="sidebarMenuLabel">Company name</h5>
               <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
             </div>
+            <div id="live-currency-tracker" class="p-3 border bg-light">
+                <h6>Live Currency Tracker</h6>
+                <ul id="live-currency-list" class="list-unstyled mb-0">
+                    <li>EUR/USD: <span id="eur-usd">--</span></li>
+                    <li>GBP/USD: <span id="gbp-usd">--</span></li>
+                    <li>EUR/GBP: <span id="eur-gbp">--</span></li>
+                </ul>
+            </div>
+           
             <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto">
               <ul class="nav flex-column">
                 <li class="nav-item">
+
                   <a class="nav-link d-flex align-items-center gap-2 active" aria-current="page" href="#">
                     <svg class="bi"><use xlink:href="#house-fill"/></svg>
                     Dashboard
@@ -337,12 +347,22 @@
                 <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     Choose the Currency Pair
                   </button>
+                <ul id= "currency" class="dropdown-menu">
+                    <li><a class="dropdown-item" value="EURUSD">EURUSD</a></li>
+                    <li><a class="dropdown-item" value="GBPUSD">GBPUSD</a></li>
+                    <li><a class="dropdown-item" value="EURGBP">EURGBP</a></li>
+                    <li><a class="dropdown-item" value="USDCAD">USDCAD</a></li>
+                    <li><a class="dropdown-item" value="USDZAR">USDZAR</a></li>
+                  </ul>
+              </div>
+              <div class="btn-group me-2">
+                <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Choose the period
+                  </button>
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="/pair/EURUSD">EURUSD</a></li>
-                    <li><a class="dropdown-item" href="/pair/GBPUSD">GBPUSD</a></li>
-                    <li><a class="dropdown-item" href="/pair/EURGBP">EURGBP</a></li>
-                    <li><a class="dropdown-item" href="/pair/USDCAD">USDCAD</a></li>
-                    <li><a class="dropdown-item" href="/currency/USDZAR">USDZAR</a></li>
+                    <li><a class="dropdown-item" value="1">Today</a></li>
+                    <li><a class="dropdown-item" value="7">1 Week</a></li>
+                    <li><a class="dropdown-item" value="30">Last 30 days</a></li>
                   </ul>
               </div>
 
@@ -381,12 +401,7 @@
       </div>
     </div>
 
-  
 
-
-
-      
-        <div id="plotly-chart"></div>
     </div>
     <script>
         var graph_json = {{ graph_json | tojson | safe }};
@@ -395,18 +410,8 @@
             graph_data.layout.xaxis = {
                 tickformat: "%b %d %H:%M" // Format: Feb 7 00:00
             };
-            Plotly.react('plotly-chart', graph_data.data, graph_data.layout);
-        } else {
-            document.getElementById('plotly-chart').innerText = 'No data available to display the chart.';
-        }
-
-        var graph_json2 = {{ graph_json2 | tojson | safe }};
-        if (graph_json2) {
-            var graph_data = JSON.parse(graph_json2);
-            graph_data.layout.xaxis = {
-                tickformat: "%b %d %H:%M" // Format: Feb 7 00:00
-            };
             Plotly.react('technical-chart', graph_data.data, graph_data.layout);
+            
             // Download chart as image
     document.querySelector('.btn-outline-secondary').addEventListener('click', function() {
         Plotly.toImage(document.getElementById('technical-chart'), {format: 'png', height: 600, width: 800})
@@ -423,10 +428,44 @@
             document.getElementById('plotly-chart').innerText = 'No data available to display the chart.';
         }
     </script>
+    <script>
+        function updateLiveCurrencyRates() {
+            $.ajax({
+                url: '/api/live-rates',  // Your endpoint for live currency data
+                method: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    // Update the text for each currency pair
+                    $('#eur-usd').text(data.EURUSD);
+                    $('#gbp-usd').text(data.GBPUSD);
+                    $('#eur-gbp').text(data.EURGBP);
+                },
+                error: function(err) {
+                    console.error('Error fetching live currency rates:', err);
+                }
+            });
+        }
+        
+        $(document).ready(function() {
+            updateLiveCurrencyRates();  // initial fetch
+            // Update every 30 seconds (adjust the interval as needed)
+            setInterval(updateLiveCurrencyRates, 30000);
+        });
+    </script>
+    
     <script src="{{ url_for('static', filename='assets/dist/js/bootstrap.bundle.min.js')}}"></script>
     <script>
         $(document).ready(function() {
             $('.table').DataTable();
+
+            //Set currency dropdown to the selected currency
+            var selectedCurrency = "{{ currency }}";
+            $('#currency .dropdown-item').each(function() {
+                if ($(this).attr('value') === selectedCurrency) {
+                    $(this).addClass('active');
+                    $('.btn-secondary.dropdown-toggle').first().text($(this).text());
+                }
+            });
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.2/dist/chart.umd.js" integrity="sha384-eI7PSr3L1XLISH8JdDII5YN/njoSsxfbrkCTnJrzXt+ENP5MOVBxD+l6sEG4zoLp" crossorigin="anonymous"></script>

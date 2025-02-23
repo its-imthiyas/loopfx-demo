@@ -4,6 +4,8 @@ import plotly.express as px
 from datetime import datetime
 import pandas as pd
 import plotly.graph_objects as go
+import yfinance as yf
+
 
 app = Flask(__name__)
 
@@ -37,25 +39,22 @@ def home():
         # Calculate moving averages over a 20-period window
         df['SMA20'] = df['close'].rolling(window=20).mean()
         df['EMA20'] = df['close'].ewm(span=20, adjust=False).mean()
-        
-        fig = px.line(df, x='time', y='close', title='Currency Prices Over Time')
-        graph_json = fig.to_json()
     else:
         graph_json = None
     
     
       # Create the candlestick chart
-    fig2 = go.Figure(data=[go.Candlestick(x=df['time'],
+    fig = go.Figure(data=[go.Candlestick(x=df['time'],
                                          open=df['open'],
                                          high=df['high'],
                                          low=df['low'],
                                          close=df['close'])])
     
     # Overlay the 20-period SMA and EMA
-    fig2.add_trace(go.Scatter(x=df['time'], y=df['SMA20'], mode='lines', name='SMA20'))
-    fig2.add_trace(go.Scatter(x=df['time'], y=df['EMA20'], mode='lines', name='EMA20'))
+    fig.add_trace(go.Scatter(x=df['time'], y=df['SMA20'], mode='lines', name='SMA20'))
+    fig.add_trace(go.Scatter(x=df['time'], y=df['EMA20'], mode='lines', name='EMA20'))
     
-    fig2.update_layout(title=f'Candlestick Chart for EURUSD',
+    fig.update_layout(title=f'Candlestick Chart for EURUSD',
                       xaxis_title='Time',
                       yaxis_title='Price',
                       xaxis=dict(
@@ -65,10 +64,39 @@ def home():
 
     
     # Convert the chart to JSON
-    graph_json2 = fig2.to_json()
+    graph_json = fig.to_json()
     
     # Render the data in the template
-    return render_template('home.html', graph_json=graph_json, graph_json2=graph_json2, data=data)
+    return render_template('home.html', graph_json=graph_json, data=data, currency = 'EURUSD')
+
+
+
+def fetch_live_rates():
+    # Map our currency pairs to the corresponding yfinance ticker symbols
+    tickers = {
+        "EURUSD": "EURUSD=X",
+        "GBPUSD": "GBPUSD=X",
+        "EURGBP": "EURGBP=X"
+    }
+    live_data = {}
+    for pair, ticker in tickers.items():
+        try:
+            # Download data for today with 1-minute intervals
+            df = yf.download(ticker, period="1d", interval="1m")
+            if not df.empty:
+                # Use the last available closing price as the live rate
+                live_data[pair] = round(df["Close"].iloc[-1], 3)
+            else:
+                live_data[pair] = "N/A"
+        except Exception as e:
+            live_data[pair] = "Error"
+    return live_data
+
+@app.route('/api/live-rates')
+def live_rates():
+    rates = fetch_live_rates()
+    return jsonify(rates)
+
 
 
 @app.route('/currency/<pair>')

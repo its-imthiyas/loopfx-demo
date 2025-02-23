@@ -30,8 +30,21 @@ def get_currency_by_pair(pair: str):
     
     return jsonify(result_dict)
 
+@app.route('/api/currency_prices_by_pair_and_period/<pair>/<period>', methods=['GET'])
+def get_currency_by_pair_and_period(pair: str, period: str):
+    query = "SELECT * FROM currency_prices Where pair = '{}' AND time >= datetime('now', '-{} days')".format(pair, period)
+    # query = "SELECT * FROM currency_prices WHERE pair = '{}'".format(pair)
+    print(query)
+    result = query_table(query, DB_PATH)
+    
+    result_dict = process_dataframe(result)
+    
+    print(result_dict[:5])
+    
+    return jsonify(result_dict)
+
 @app.route('/api/currency_prices_by_period/<period>/<interval>', methods=['GET'])
-def get_currency_by_period(period: str, interval: str):
+def get_currency_by_period(period: str):
     query = "SELECT * FROM currency_prices WHERE time >= datetime('now', '-{} days".format(period)
     print(query)
     result = query_table(query, DB_PATH)
