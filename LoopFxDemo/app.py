@@ -31,6 +31,13 @@ def home():
     
     if data:
         df = pd.DataFrame(data)
+        df['time'] = pd.to_datetime(df['time'])
+        df['time'] = df['time'].dt.tz_localize(None)
+        
+        # Calculate moving averages over a 20-period window
+        df['SMA20'] = df['close'].rolling(window=20).mean()
+        df['EMA20'] = df['close'].ewm(span=20, adjust=False).mean()
+        
         fig = px.line(df, x='time', y='close', title='Currency Prices Over Time')
         graph_json = fig.to_json()
     else:
@@ -43,9 +50,19 @@ def home():
                                          high=df['high'],
                                          low=df['low'],
                                          close=df['close'])])
+    
+    # Overlay the 20-period SMA and EMA
+    fig2.add_trace(go.Scatter(x=df['time'], y=df['SMA20'], mode='lines', name='SMA20'))
+    fig2.add_trace(go.Scatter(x=df['time'], y=df['EMA20'], mode='lines', name='EMA20'))
+    
     fig2.update_layout(title=f'Candlestick Chart for EURUSD',
                       xaxis_title='Time',
-                      yaxis_title='Price')
+                      yaxis_title='Price',
+                      xaxis=dict(
+            type='date',
+            tickformat='%b %d %H:%M'
+        ))
+
     
     # Convert the chart to JSON
     graph_json2 = fig2.to_json()

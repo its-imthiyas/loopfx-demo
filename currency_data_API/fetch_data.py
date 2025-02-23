@@ -214,7 +214,7 @@ if __name__ == "__main__":
     
     # define table, fetch data, and add data to table
     define_table(DB_PATH)
-    df = fetch_currency_data(cache=session, pairs=CURRENCY_PAIRS, period="1d", interval="30m", time_sleep=5)
+    df = fetch_currency_data(cache=session, pairs=CURRENCY_PAIRS, period="14d", interval="30m", time_sleep=5)
     add_to_currency_table(df, DB_PATH)
 
     # example: pull one currency pair from the db and plot
