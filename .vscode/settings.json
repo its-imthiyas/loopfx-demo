@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./currency_data_API"
+    ]
+}
