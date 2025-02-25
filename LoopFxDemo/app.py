@@ -42,73 +42,104 @@ def home(pair, period):
         data = response.json()
         print("API response:", data)
         
-        # Wrap the data if needed and create a DataFrame
+        # Create a DataFrame
         if isinstance(data, dict):
-            df = pd.DataFrame([data])
+            fxdata_df = pd.DataFrame([data])
         else:
-            df = pd.DataFrame(data)
+            fxdata_df = pd.DataFrame(data)
         
-        if 'time' in df.columns:
-            df['time'] = pd.to_datetime(df['time'], utc=True).dt.tz_convert('UTC').dt.tz_localize(None)
+        if 'time' in fxdata_df.columns:
+            fxdata_df['time'] = pd.to_datetime(fxdata_df['time'], utc=True).dt.tz_convert('UTC').dt.tz_localize(None)
             
             # Calculate the 20-period SMA and EMA
-            df['SMA20'] = df['close'].rolling(window=20).mean()
-            df['EMA20'] = df['close'].ewm(span=20, adjust=False).mean()
+            fxdata_df['SMA20'] = fxdata_df['close'].rolling(window=20).mean()
+            fxdata_df['EMA20'] = fxdata_df['close'].ewm(span=20, adjust=False).mean()
             
             # Calculate Bollinger Bands
-            df['std'] = df['close'].rolling(window=20).std()
-            df['UpperBand'] = df['SMA20'] + (df['std'] * 2)
-            df['LowerBand'] = df['SMA20'] - (df['std'] * 2)
+            fxdata_df['std'] = fxdata_df['close'].rolling(window=20).std()
+            fxdata_df['UpperBand'] = fxdata_df['SMA20'] + (fxdata_df['std'] * 2)
+            fxdata_df['LowerBand'] = fxdata_df['SMA20'] - (fxdata_df['std'] * 2)
     
-            # Create the candlestick chart
-            fig = go.Figure(data=[go.Candlestick(
-                x=df['time'],
-                open=df['open'],
-                high=df['high'],
-                low=df['low'],
-                close=df['close'],
-                name='Price'
-            )])
-    
-            # Add SMA and EMA traces
-            fig.add_trace(go.Scatter(x=df['time'], y=df['SMA20'], mode='lines', name='SMA20'))
-            fig.add_trace(go.Scatter(x=df['time'], y=df['EMA20'], mode='lines', name='EMA20'))
-    
-            # Add Bollinger Bands: Upper Band
-            fig.add_trace(go.Scatter(
-                x=df['time'],
-                y=df['UpperBand'],
+            
+            chart_figure = go.Figure()
+
+            chart_figure.add_trace(go.Candlestick(
+                x=fxdata_df['time'],
+                open=fxdata_df['open'],
+                high=fxdata_df['high'],
+                low=fxdata_df['low'],
+                close=fxdata_df['close'],
+                name='Price',
+                increasing_line_color='green',
+                decreasing_line_color='red'
+            ))
+
+            # SMA20
+            chart_figure.add_trace(go.Scatter(
+                x=fxdata_df['time'],
+                y=fxdata_df['SMA20'],
                 mode='lines',
-                line=dict(color='rgba(131, 90, 241, 1)', dash='solid'),
+                line=dict(color='#2ca02c', width=2),
+                name='SMA20'
+            ))
+
+            # EMA20
+            chart_figure.add_trace(go.Scatter(
+                x=fxdata_df['time'],
+                y=fxdata_df['EMA20'],
+                mode='lines',
+                line=dict(color='#ff7f0e', width=2),
+                name='EMA20'
+            ))
+
+            # Upper Band (on second axis)
+            chart_figure.add_trace(go.Scatter(
+                x=fxdata_df['time'],
+                y=fxdata_df['UpperBand'],
+                mode='lines',
+                line=dict(color='#1f77b4', dash='solid', width=2),
                 name='Upper Bollinger Band',
-                opacity=0.5
+                #yaxis='y2',
+                opacity=0.7
             ))
-    
-            # Add Bollinger Bands: Lower Band with fill
-            fig.add_trace(go.Scatter(
-                x=df['time'],
-                y=df['LowerBand'],
+
+            # Lower Band (on second axis) with fill
+            chart_figure.add_trace(go.Scatter(
+                x=fxdata_df['time'],
+                y=fxdata_df['LowerBand'],
                 mode='lines',
-                line=dict(color='rgba(131, 90, 241, 1)', dash='solid'),
+                line=dict(color='#1f77b4', dash='solid', width=2),
                 fill='tonexty',
+                fillcolor='rgba(31,119,180,0.2)',
                 name='Lower Bollinger Band',
-                fillcolor='rgba(131, 90, 241, 0.2)'  # Semi-transparent fill
+                #yaxis='y2',
+                opacity=0.7
             ))
-    
-            # Update layout with axis titles and margins
-            fig.update_layout(
+
+            # Layout updates: template, margin, axes, interactive legend
+            chart_figure.update_layout(
                 title=f'Candlestick Chart for {pair} - {period} days',
                 xaxis_title='Time',
                 yaxis_title='Price',
+                template='plotly_white',
+                margin=dict(l=50, r=50, b=80, t=80),
                 xaxis=dict(
                     type='date',
                     tickformat='%b %d %H:%M'
                 ),
-                margin=dict(l=50, r=50, b=80, t=80)
+                #yaxis2=dict(
+                #    title='Bollinger Bands',
+                #    overlaying='y',
+                #    side='right'
+                #),
+                legend=dict(
+                    itemclick='toggle',
+                    itemdoubleclick='toggleothers'
+                )
             )
-    
+
             # Convert the chart to JSON for rendering
-            graph_json = fig.to_json()
+            graph_json = chart_figure.to_json()
             print(graph_json)
             logger.info("Chart JSON generated")
         else:
@@ -133,10 +164,10 @@ def fetch_live_rates():
     live_data = {}
     for pair, ticker in tickers.items():
         try:
-            df = yf.download(ticker, period="1d", interval="1m")
-            logger.info(f"Fetched data for {ticker}:\n{df.tail()}")
-            if not df.empty:
-                live_data[pair] = round(float(df["Close"].iloc[-1]), 3)
+            fxdata_df = yf.download(ticker, period="1d", interval="1m")
+            logger.info(f"Fetched data for {ticker}:\n{fxdata_df.tail()}")
+            if not fxdata_df.empty:
+                live_data[pair] = round(float(fxdata_df["Close"].iloc[-1]), 3)
             else:
                 live_data[pair] = "N/A"
         except Exception as e:

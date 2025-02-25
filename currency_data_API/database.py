@@ -25,7 +25,7 @@ def define_table(path):
     print("Table created successfully")
     
 
-def add_to_currency_table(df, path):
+def add_to_currency_table(fxdata_df, path):
     connection = sqlite3.connect(path)
     cursor = connection.cursor()
     
@@ -34,20 +34,20 @@ def add_to_currency_table(df, path):
         VALUES (?, ?, ?, ?, ?, ?);
     '''
     
-    df["time"] = df["time"].dt.strftime("%Y-%m-%d %H:%M:%S") 
-    fxvalue_tuples = list(df.itertuples(index=False, name=None)) 
+    fxdata_df["time"] = fxdata_df["time"].dt.strftime("%Y-%m-%d %H:%M:%S") 
+    fxvalue_tuples = list(fxdata_df.itertuples(index=False, name=None)) 
     cursor.executemany(insert_fxvalue, fxvalue_tuples)
     connection.commit()
     connection.close()
-    print(f"{len(df)} records stored in database at {path}")
+    print(f"{len(fxdata_df)} records stored in database at {path}")
     
 def query_table(query, path, params=()):
     connection = sqlite3.connect(path)
-    df = pd.read_sql(query, connection, params=params) 
+    fxdata_df = pd.read_sql(query, connection, params=params) 
     connection.close()
     
-    if "time" in df.columns:
-        df["time"] = pd.to_datetime(df["time"]) 
-    df.set_index("time", inplace=True)  
-    df.sort_index(inplace=True)    
-    return df
+    if "time" in fxdata_df.columns:
+        fxdata_df["time"] = pd.to_datetime(fxdata_df["time"]) 
+    fxdata_df.set_index("time", inplace=True)  
+    fxdata_df.sort_index(inplace=True)    
+    return fxdata_df

@@ -19,16 +19,16 @@ def fetch_currency_data(cache, pairs, period, interval, time_sleep):
         
         try:
             ticker = yf.Ticker(pair, session=cache) # caching to help with rate limiting
-            df = ticker.history(period=period, interval=interval)
+            fxdata_df = ticker.history(period=period, interval=interval)
 
-            if df.empty:
+            if fxdata_df.empty:
                 print(f"No data for {cleaned_pair}")
                 continue
 
-            df = df[["Open", "High", "Low", "Close"]].reset_index() # the other columns will be empty
-            df.rename(columns={"Datetime": "time"}, inplace=True)
-            df["pair"] = cleaned_pair
-            pair_data.append(df)
+            fxdata_df = fxdata_df[["Open", "High", "Low", "Close"]].reset_index() # the other columns will be empty
+            fxdata_df.rename(columns={"Datetime": "time"}, inplace=True)
+            fxdata_df["pair"] = cleaned_pair
+            pair_data.append(fxdata_df)
             print(f"{cleaned_pair}: Data retrieved")
             
             time.sleep(time_sleep) # sleep to help with rate limiting
@@ -45,8 +45,8 @@ def fetch_currency_data(cache, pairs, period, interval, time_sleep):
     
     
 
-def example_plot(df, pair):
-    if df.empty:
+def example_plot(fxdata_df, pair):
+    if fxdata_df.empty:
         print('No data to plot')
         return
 
@@ -54,7 +54,7 @@ def example_plot(df, pair):
     
     # candlestick chart with moving average -- actual mav depends on interval
     # check out https://github.com/matplotlib/mplfinance#tutorials
-    mpf.plot(df, type="candle", mav=(5), style="charles",
+    mpf.plot(fxdata_df, type="candle", mav=(5), style="charles",
              title=f"{pair} Candlestick Example", ylabel="Price",
              savefig=plot_path)
     
@@ -67,11 +67,11 @@ if __name__ == "__main__":
     
     # define table, fetch data, and add data to table
     define_table(Config.DB_PATH)
-    df = fetch_currency_data(cache=session, pairs=Config.CURRENCYPAIRS, period="30d", interval="30m", time_sleep=5)
-    add_to_currency_table(df, Config.DB_PATH)
+    fxdata_df = fetch_currency_data(cache=session, pairs=Config.CURRENCYPAIRS, period="30d", interval="30m", time_sleep=5)
+    add_to_currency_table(fxdata_df, Config.DB_PATH)
 
     # example: pull one currency pair from the db and plot
-    # yes, you could also just filter the df
+    # yes, you could also just filter the fxdata_df
     example_pair = Config.CURRENCYPAIRS[0][:-2] # removes =X from yfinance
     query = f"SELECT * FROM currency_prices WHERE pair = '{example_pair}'"
     example_pair_data = query_table(query, Config.DB_PATH)
