@@ -22,7 +22,6 @@ def get_currency_all(limit: int = 10):
         logger.error(f"Error fetching currency prices: {e}")
         return jsonify({"error": "An error occurred while fetching data."}), 500
     
-
 @app.route('/api/currency_prices_by_pair/<pair>', methods=['GET'])
 def get_currency_by_pair(pair: str):
     try:
