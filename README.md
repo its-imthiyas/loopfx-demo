@@ -1,8 +1,8 @@
-# Foreign Exchange Dashboard Project
-Scenario: A client comes to you and asks you to create a dashboard to support their trading and help them form actionable insights. They primarily trade EUR/USD, GBP/USD, EUR/GBP, and USD/CAD. They sometimes trade USD/ZAR as well. They are interested in integrating relevant supporting data but do not require it right now. 
-
+# LoopFX - Foreign Exchange Dashboard (Demo) Project
+Scenario: A client comes to you and asks you to create a dashboard to support their trading and help them form actionable insights. They primarily trade EUR/USD, GBP/USD, EUR/GBP, and USD/CAD. They sometimes trade USD/ZAR as well. They are interested in integrating relevant supporting data but do not require it right now.
 
 ## Overview
+LoopFx Trading Platform is a Demo project where Traders can use it for technical analysis of the Foreign Exchange currencies, live currency comparison prices that refreshes every 30 seconds and the relevant data. The fx pricing data is fetched using 'yfinance' python library and stored in SQLITE database. These are then sent over the API endpoints from our backend to the 
 - I fetched FX pricing data via `yfinance` and stored in a database
 - I built a backend to...
 - I included a technical analysis by...
