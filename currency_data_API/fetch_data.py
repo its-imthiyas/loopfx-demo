@@ -51,9 +51,6 @@ def example_plot(fxdata_df, pair):
         return
 
     plot_path = Config.DATA_FOLDER / f"{pair}_candle_chart.png"    
-    
-    # candlestick chart with moving average -- actual mav depends on interval
-    # check out https://github.com/matplotlib/mplfinance#tutorials
     mpf.plot(fxdata_df, type="candle", mav=(5), style="charles",
              title=f"{pair} Candlestick Example", ylabel="Price",
              savefig=plot_path)
@@ -64,15 +61,18 @@ def example_plot(fxdata_df, pair):
 if __name__ == "__main__":
     # cache with one hour expiration --> easy to run into rate limits with yfinance
     session = requests_cache.CachedSession("yfinance_cache", expire_after=3600)
-    
-    # define table, fetch data, and add data to table
     define_table(Config.DB_PATH)
-    fxdata_df = fetch_currency_data(cache=session, pairs=Config.CURRENCYPAIRS, period="30d", interval="30m", time_sleep=5)
-    add_to_currency_table(fxdata_df, Config.DB_PATH)
 
-    # example: pull one currency pair from the db and plot
-    # yes, you could also just filter the fxdata_df
-    example_pair = Config.CURRENCYPAIRS[0][:-2] # removes =X from yfinance
-    query = f"SELECT * FROM currency_prices WHERE pair = '{example_pair}'"
-    example_pair_data = query_table(query, Config.DB_PATH)
-    example_plot(example_pair_data, example_pair) 
+    while True:
+        # fetch data every 1 minute
+        fxdata_df = fetch_currency_data(cache=session, pairs=Config.CURRENCYPAIRS, period="1d", interval="1m", time_sleep=5)
+        if fxdata_df is not None:
+            add_to_currency_table(fxdata_df, Config.DB_PATH)
+
+        example_pair = Config.CURRENCYPAIRS[0][:-2]  # removes =X from yfinance
+        query = f"SELECT * FROM currency_prices WHERE pair = '{example_pair}'"
+        example_pair_data = query_table(query, Config.DB_PATH)
+        example_plot(example_pair_data, example_pair)
+        
+        # wait for 1 minute before fetching data again
+        time.sleep(60)    

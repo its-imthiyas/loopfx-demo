@@ -295,6 +295,9 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary">Download</button>
               </div>
               <div class="btn-group me-2">
+                <button id="fetchdata" type="button" class="btn btn-sm btn-outline-secondary">fetchdata</button>
+              </div>
+              <div class="btn-group me-2">
                 <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     Choose the Currency Pair
                   </button>
@@ -339,13 +342,12 @@
           </div>
 
           <div id="technical-chart"></div>
-    
+          
           <!-- Toggle Button for Data Table -->
           <div class="mb-3">
             <button id="toggle-table" class="btn btn-primary">Show/Hide Data Table</button>
           </div>
 
-          <!-- Wrap your table in a container with an ID -->
           <div id="data-table-container" class="table-responsive small">
             <h2>Currency Prices</h2>
             <table id="currency-table" class="table table-striped table-sm">
@@ -377,11 +379,12 @@
     <script>
         var graph_json = {{ graph_json | tojson | safe }};
         if (graph_json) {
+          console.log('graph');
+          console.log(graph_json);
             var graph_data = JSON.parse(graph_json);
             graph_data.layout.xaxis = {
                 tickformat: "%b %d %H:%M" // Format: Feb 7 00:00
             };
-            // Set a custom height (e.g., 800 pixels)
             graph_data.layout.height = 800;
             Plotly.react('technical-chart', graph_data.data, graph_data.layout);
 
@@ -401,6 +404,22 @@
             document.getElementById('technical-chart').innerText = 'No data available to display the chart.';
         }
 
+        function updateLiveCurrencyRates() {
+          $.ajax({
+              url: '/api/live-rates', 
+              method: 'GET',
+              dataType: 'json',
+              success: function(data) {
+                  // Update the text for each currency pair
+                  $('#eur-usd').text(data.EURUSD);
+                  $('#gbp-usd').text(data.GBPUSD);
+                  $('#eur-gbp').text(data.EURGBP);
+              },
+              error: function(err) {
+                  console.error('Error fetching live currency rates:', err);
+              }
+          });
+      }
 
         $(document).ready(function() {
             $('.table').DataTable();
@@ -438,34 +457,46 @@
                 window.location.href = `/home/${currency}/${newPeriod}`;
             });
 
-             // Initial fetch
+          // Initial fetch
           updateLiveCurrencyRates();
-          // Update every 30 seconds (adjust as needed)
-          setInterval(updateLiveCurrencyRates, 30000);
-
+          // Update every 10 seconds
+          setInterval(updateLiveCurrencyRates, 10000);
+          
+         setInterval(function() {
+            updateChart("{{ currency }}", "{{ period }}");
+        }, 60000);
+        $('#fetchdata').hide();
+        $('#fetchdata').click(function(){
+          alert("{{ currency }}" + "{{ period }}");
+          updateChart("{{ currency }}", "{{ period }}");
+        });
           $("#toggle-table").click(function(){
             $("#data-table-container").slideToggle();
           });
         });
 
-      function updateLiveCurrencyRates() {
-          $.ajax({
-              url: '/api/live-rates',  // Points to the route we just uncommented
-              method: 'GET',
-              dataType: 'json',
-              success: function(data) {
-                  // Update the text for each currency pair
-                  $('#eur-usd').text(data.EURUSD);
-                  $('#gbp-usd').text(data.GBPUSD);
-                  $('#eur-gbp').text(data.EURGBP);
-              },
-              error: function(err) {
-                  console.error('Error fetching live currency rates:', err);
-              }
-          });
-      }
-      
 
+      
+      function updateChart(pair, period) {
+        $.ajax({
+            url: `/api/chart-data/${pair}/${period}`,  
+            method: 'GET',
+            dataType: 'json',
+            success: function(data) {
+              console.log('graph2');
+              console.log(data);
+                var graph_data = data;
+                graph_data.layout.xaxis = {
+                    tickformat: "%b %d %H:%M" // Format: Feb 7 00:00
+                };
+                graph_data.layout.height = 800;
+                Plotly.react('technical-chart', graph_data.data, graph_data.layout);
+            },
+            error: function(err) {
+                console.error('Error fetching chart data:', err);
+            }
+        });
+    }
     // Helper function to toggle a specific trace
     function toggleTrace(checkboxId, traceIndex) {
       const checkbox = document.getElementById(checkboxId);
