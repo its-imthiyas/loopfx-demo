@@ -16,7 +16,6 @@ class Config:
         except json.JSONDecodeError:
             raise ValueError(f"Error decoding JSON configuration file: {Config.ConfigFile}")
 
-# Call the load_config method after the class definition
 config = Config.load_config()
 Config.DB_PATH = (Config.RootDirectory / config["DB_PATH"]).resolve()
 Config.DATA_FOLDER = (Config.RootDirectory / config["DATA_FOLDER"]).resolve()
