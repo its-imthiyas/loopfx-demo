@@ -11,6 +11,7 @@ app.config.from_object(Config)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+#API endpoint to get all currency prices (default limit is 10 entries)
 @app.route('/api/currency_prices/<int:limit>', methods=['GET'])
 def get_currency_all(limit: int = 10):
     try:
@@ -22,6 +23,12 @@ def get_currency_all(limit: int = 10):
         logger.error(f"Error fetching currency prices: {e}")
         return jsonify({"error": "An error occurred while fetching data."}), 500
     
+# Home page route that calls the same function with a default limit of 10
+@app.route('/', methods=['GET'])
+def home():
+    return get_currency_all(10)
+    
+#API endpoint to get currency prices by pair (eg: EURUSD)    
 @app.route('/api/currency_prices_by_pair/<pair>', methods=['GET'])
 def get_currency_by_pair(pair: str):
     try:
@@ -33,6 +40,7 @@ def get_currency_by_pair(pair: str):
         logger.error(f"Error fetching currency prices: {e}")
         return jsonify({"error": "An error occurred while fetching data."}), 500
 
+#API endpoint to get currency prices by pair and period (eg: EURUSD and 30 days)
 @app.route('/api/currency_prices_by_pair_and_period/<pair>/<int:period>', methods=['GET'])
 def get_currency_by_pair_and_period(pair: str, period: int):
     try:
@@ -44,11 +52,12 @@ def get_currency_by_pair_and_period(pair: str, period: int):
         logger.error(f"Error fetching currency prices for pair {pair} and period {period}: {e}")
         return jsonify({"error": "An error occurred while fetching data."}), 500
 
-@app.route('/api/currency_prices_by_period/<period>/<interval>', methods=['GET'])
+#API endpoint to get currency prices by period (eg: 10 days)
+@app.route('/api/currency_prices_by_period/<period>', methods=['GET'])
 def get_currency_by_period(period: str):
     try:
-        query = "SELECT * FROM currency_prices WHERE time >= datetime('now', '-? days')"
-        result = query_table(query, app.config['DB_PATH'], (period,))
+        query = "SELECT * FROM currency_prices WHERE time >= datetime('now', ?)"
+        result = query_table(query, app.config['DB_PATH'], (f'-{period} days',)) 
         result_dict = process_dataframe(result)
         return jsonify(result_dict)
     except Exception as e:

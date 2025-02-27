@@ -2,7 +2,7 @@ import pandas as pd
 import sqlite3
 
 
-#Defining a Table for Fx Values
+#Creating a Table for Fx Values (Currency Prices)
 def define_table(path):
     connection = sqlite3.connect(path)
     cursor = connection.cursor()
@@ -25,15 +25,18 @@ def define_table(path):
     print("Table created successfully")
     
 
+#Adding Fx Values to the Table
 def add_to_currency_table(fxdata_df, path):
     connection = sqlite3.connect(path)
     cursor = connection.cursor()
     
+    #Insert or Ignore to avoid duplicates entries
     insert_fxvalue = '''
-        INSERT OR IGNORE INTO currency_prices (time, open, high, low, close, pair)
+        INSERT OR IGNORE INTO currency_prices (time, open, high, low, close, pair) 
         VALUES (?, ?, ?, ?, ?, ?);
     '''
     
+    #Making sure datetime is in the correct format
     fxdata_df["time"] = fxdata_df["time"].dt.strftime("%Y-%m-%d %H:%M:%S") 
     fxvalue_tuples = list(fxdata_df.itertuples(index=False, name=None)) 
     cursor.executemany(insert_fxvalue, fxvalue_tuples)
@@ -41,6 +44,8 @@ def add_to_currency_table(fxdata_df, path):
     connection.close()
     print(f"{len(fxdata_df)} records stored in database at {path}")
     
+    
+#Querying the Table
 def query_table(query, path, params=()):
     connection = sqlite3.connect(path)
     fxdata_df = pd.read_sql(query, connection, params=params) 
@@ -48,6 +53,6 @@ def query_table(query, path, params=()):
     
     if "time" in fxdata_df.columns:
         fxdata_df["time"] = pd.to_datetime(fxdata_df["time"]) 
-    fxdata_df.set_index("time", inplace=True)  
-    fxdata_df.sort_index(inplace=True)    
+    fxdata_df.set_index("time", inplace=True)   #Setting the time column as the index
+    fxdata_df.sort_index(inplace=True)     #Sorting the DataFrame by the index
     return fxdata_df

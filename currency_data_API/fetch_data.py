@@ -44,7 +44,7 @@ def fetch_currency_data(cache, pairs, period, interval, time_sleep):
         return pd.concat(pair_data, ignore_index=True) 
     
     
-
+#Example plot to check how the data looks
 def example_plot(fxdata_df, pair):
     if fxdata_df.empty:
         print('No data to plot')
@@ -59,13 +59,15 @@ def example_plot(fxdata_df, pair):
 
     
 if __name__ == "__main__":
+    print("fetch data")
     # cache with one hour expiration --> easy to run into rate limits with yfinance
     session = requests_cache.CachedSession("yfinance_cache", expire_after=3600)
+    print("defined table")
     define_table(Config.DB_PATH)
 
     while True:
-        # fetch data every 1 minute
-        fxdata_df = fetch_currency_data(cache=session, pairs=Config.CURRENCYPAIRS, period="1d", interval="1m", time_sleep=5)
+        # fetch data every 1 minute and store in the database
+        fxdata_df = fetch_currency_data(cache=session, pairs=Config.CURRENCYPAIRS, period="30d", interval="30m", time_sleep=5)
         if fxdata_df is not None:
             add_to_currency_table(fxdata_df, Config.DB_PATH)
 
