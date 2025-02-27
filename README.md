@@ -46,6 +46,7 @@ I have consolidated all the project dependencies into a single file called `requ
 
 Once the environment is set up, we can run the following script to start our API endpoints to run in backend, 
 ```cd currency_data_API```
+```python fetch_data.py``` and 
 ```python api.py```
 
 and followed by the below script to make our dashboard live (frontend).
